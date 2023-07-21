@@ -1,9 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect, useReducer } from 'react';
+import topStoriesReducer from './../reducers/top-stories-reducer';
+import { getTopStoriesFailure, getTopStoriesSuccess } from './../actions/index';
+
+const initialState = { //create initial state for useReducer hook.
+  isLoaded: false,
+  topStories: [],
+  error: null
+};
 
 function TopStories () {
-  const [error, setError] = useState(null);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [topStories, setTopStories] = useState([]);
+  const [state, dispatch] = useReducer(topStoriesReducer, initialState); //initialize useReducer hook
+
 
   useEffect(() => {
     fetch(`https://api.nytimes.com/svc/topstories/v2/home.json?api-key=${process.env.REACT_APP_API_KEY}`) //Fetch returns a promise object. If resolved we go to .then chain, if rejected we go to catch block
@@ -15,14 +22,19 @@ function TopStories () {
           }
         })
       .then((jsonifiedResponse) => {
-          setTopStories(jsonifiedResponse.results)
-          setIsLoaded(true)
+          const action = getTopStoriesSuccess(jsonifiedResponse.results) //create action and dispatch it
+          dispatch(action);
         })
       .catch((error) => {
-        setError(error.message)
-        setIsLoaded(true)
+          const action = getTopStoriesFailure(error.message)
+          dispatch(action);
       });
     }, [])
+
+
+  // we destructure error, isLoaded, and topStories from the state variable.
+  const { error, isLoaded, topStories } = state;
+
 
   if (error) {
     return <h1>Error: {error}</h1>;
@@ -37,6 +49,8 @@ function TopStories () {
             <li key={index}>
               <h3>{article.title}</h3>
               <p>{article.abstract}</p>
+              <p><em>{article.byline}</em></p>
+              <p>{article.geo_facet[1]}</p>
             </li>
           )}
         </ul>
